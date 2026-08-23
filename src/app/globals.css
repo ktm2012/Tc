@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-noto-sans-kr), -apple-system, BlinkMacSystemFont,
+    "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Consolas,
+    monospace;
+
+  --color-bg: oklch(99% 0.003 90);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-2: oklch(97.5% 0.004 90);
+  --color-border: oklch(91% 0.006 90);
+  --color-ink: oklch(22% 0.012 270);
+  --color-muted: oklch(50% 0.012 270);
+
+  --color-accent: oklch(62% 0.15 290);
+  --color-accent-ink: oklch(45% 0.15 290);
+  --color-accent-soft: oklch(94% 0.025 290);
+  --color-accent2: oklch(68% 0.14 340);
+  --color-accent2-ink: oklch(48% 0.14 340);
+  --color-accent2-soft: oklch(94% 0.025 340);
+
+  --color-pink: oklch(93% 0.035 350);
+  --color-purple: oklch(92% 0.035 300);
+  --color-blue: oklch(92% 0.03 240);
+  --color-mint: oklch(93% 0.035 165);
+  --color-peach: oklch(93% 0.035 55);
+  --color-green: oklch(72% 0.13 155);
+  --color-green-soft: oklch(93% 0.035 155);
+
+  --color-code-bg: oklch(20% 0.014 270);
+  --color-code-header: oklch(16% 0.012 270);
+  --color-code-text: oklch(92% 0.006 270);
+  --color-code-muted: oklch(60% 0.015 270);
+  --color-code-kw: oklch(78% 0.12 200);
+  --color-code-str: oklch(78% 0.12 145);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}

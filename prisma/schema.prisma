@@ -1,0 +1,209 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+// Using the classic "prisma-client-js" generator with its default output
+// path (node_modules/@prisma/client) rather than Prisma 7's newer
+// "prisma-client" generator, because @auth/prisma-adapter's TypeScript
+// types currently import PrismaClient from "@prisma/client" directly and
+// aren't compatible with a custom output path. Revisit once the Auth.js
+// adapter catches up.
+//
+// Prisma 7 removed datasource `url` from schema.prisma entirely — the
+// connection string now lives in prisma.config.ts (for the CLI) and is
+// passed to PrismaClient via a driver adapter (see src/lib/prisma.ts).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Auth.js models ---------------------------------------------------
+// Shape required by @auth/prisma-adapter. User carries our own profile
+// fields (username, displayName, bio, avatarUrl) alongside the
+// credentials passwordHash. Account/VerificationToken exist so OAuth
+// providers and email verification can be added later without a schema
+// change.
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  username      String    @unique
+  displayName   String
+  bio           String?
+  avatarUrl     String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  posts    Post[]
+  comments Comment[]
+  assets   Asset[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// --- Community models ---------------------------------------------------
+
+enum CategoryType {
+  POST
+  ASSET
+}
+
+model Category {
+  id   String       @id @default(cuid())
+  name String
+  slug String       @unique
+  type CategoryType
+
+  posts  Post[]
+  assets Asset[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  posts PostTag[]
+
+  @@map("tags")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Post {
+  id        String     @id @default(cuid())
+  slug      String     @unique
+  title     String
+  body      String
+  status    PostStatus @default(PUBLISHED)
+  viewCount Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  tags     PostTag[]
+  comments Comment[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("posts")
+}
+
+// Explicit join model (rather than an implicit Prisma m-n) so the join
+// table is visible in migrations and easy to query directly if needed.
+model PostTag {
+  postId String
+  tagId  String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+// parentId is unused by the MVP (comments render flat) but is here so
+// threaded replies don't require a migration later.
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model Asset {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  description   String
+  license       String
+  fileKey       String
+  fileSize      Int
+  mimeType      String
+  downloadCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("assets")
+}
