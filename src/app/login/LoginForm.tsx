@@ -2,8 +2,12 @@
 
 import { useActionState } from "react";
 import { loginAction, type LoginState } from "./actions";
-import { signInWithGoogle, signInWithApple } from "@/lib/actions/oauth";
-import { GoogleIcon, AppleIcon } from "@/components/ui/OAuthIcons";
+import {
+  signInWithGoogle,
+  signInWithNaver,
+  signInWithKakao,
+} from "@/lib/actions/oauth";
+import { GoogleIcon, NaverIcon, KakaoIcon } from "@/components/ui/OAuthIcons";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState<LoginState, FormData>(
@@ -23,13 +27,22 @@ export function LoginForm() {
             Google로 계속하기
           </button>
         </form>
-        <form action={signInWithApple}>
+        <form action={signInWithNaver}>
           <button
             type="submit"
             className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border bg-surface py-3 text-sm font-semibold text-ink"
           >
-            <AppleIcon />
-            Apple로 계속하기
+            <NaverIcon />
+            네이버로 계속하기
+          </button>
+        </form>
+        <form action={signInWithKakao}>
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border border-border bg-surface py-3 text-sm font-semibold text-ink"
+          >
+            <KakaoIcon />
+            카카오로 계속하기
           </button>
         </form>
       </div>

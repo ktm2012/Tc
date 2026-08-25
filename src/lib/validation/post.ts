@@ -1,4 +1,14 @@
 import { z } from "zod";
+import { BANNER_THEMES } from "@/components/ui/SceneBanner";
+
+export type PostFormState =
+  | {
+      errors?: Partial<
+        Record<"title" | "body" | "category" | "bannerTheme", string[]>
+      >;
+      message?: string;
+    }
+  | undefined;
 
 export const newPostSchema = z.object({
   title: z
@@ -11,4 +21,5 @@ export const newPostSchema = z.object({
   category: z.enum(["unity", "blender", "shaders", "rigging", "vfx"], {
     error: "카테고리를 선택해주세요.",
   }),
+  bannerTheme: z.enum(BANNER_THEMES, { error: "배너를 선택해주세요." }),
 });

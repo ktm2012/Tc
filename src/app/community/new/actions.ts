@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { newPostSchema } from "@/lib/validation/post";
+import { newPostSchema, type PostFormState } from "@/lib/validation/post";
+import {
+  uploadAttachment,
+  AttachmentValidationError,
+  type AttachmentKind,
+} from "@/lib/storage";
+import { generateSlug } from "@/lib/slug";
 
 const CATEGORY_LABEL: Record<string, string> = {
   unity: "유니티",
@@ -13,17 +19,12 @@ const CATEGORY_LABEL: Record<string, string> = {
   vfx: "이펙트",
 };
 
-export type NewPostState =
-  | {
-      errors?: Partial<Record<"title" | "body" | "category", string[]>>;
-      message?: string;
-    }
-  | undefined;
+const ATTACHMENT_KINDS: AttachmentKind[] = ["image", "file", "audio"];
 
 export async function createPostAction(
-  _prevState: NewPostState,
+  _prevState: PostFormState,
   formData: FormData,
-): Promise<NewPostState> {
+): Promise<PostFormState> {
   const session = await auth().catch(() => null);
   if (!session?.user) {
     redirect("/login");
@@ -33,19 +34,41 @@ export async function createPostAction(
     title: formData.get("title"),
     body: formData.get("body"),
     category: formData.get("category"),
+    bannerTheme: formData.get("bannerTheme"),
   });
 
   if (!parsed.success) {
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
-  const { title, body, category } = parsed.data;
-  const slug = `${title
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 60)}-${Date.now().toString(36)}`;
+  const { title, body, category, bannerTheme } = parsed.data;
+  const slug = generateSlug(title, "post");
+
+  // Upload any attachments before creating the post, so a rejected file
+  // (bad type/too large) fails the whole submission instead of leaving a
+  // post behind with a missing attachment.
+  const uploads: {
+    kind: AttachmentKind;
+    key: string;
+    url: string;
+    mimeType: string;
+    size: number;
+    fileName: string;
+  }[] = [];
+  for (const kind of ATTACHMENT_KINDS) {
+    const file = formData.get(`attachment_${kind}`);
+    if (!(file instanceof File) || file.size === 0) continue;
+    try {
+      const uploaded = await uploadAttachment(kind, file);
+      uploads.push({ kind, fileName: file.name, ...uploaded });
+    } catch (err) {
+      const msg =
+        err instanceof AttachmentValidationError
+          ? err.message
+          : "첨부파일을 업로드하지 못했어요.";
+      return { message: msg };
+    }
+  }
 
   try {
     const categoryRow = await prisma.category.upsert({
@@ -59,8 +82,19 @@ export async function createPostAction(
         slug,
         title,
         body,
+        bannerTheme,
         authorId: session.user.id,
         categoryId: categoryRow.id,
+        attachments: {
+          create: uploads.map((u) => ({
+            kind: u.kind.toUpperCase() as "IMAGE" | "FILE" | "AUDIO",
+            key: u.key,
+            url: u.url,
+            fileName: u.fileName,
+            mimeType: u.mimeType,
+            size: u.size,
+          })),
+        },
       },
     });
   } catch {

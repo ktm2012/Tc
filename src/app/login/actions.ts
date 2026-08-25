@@ -1,8 +1,9 @@
 "use server";
 
-import { AuthError } from "next-auth";
-import { signIn } from "@/auth";
+import { redirect } from "next/navigation";
 import { loginSchema } from "@/lib/validation/auth";
+import { verifyCredentials } from "@/lib/auth-helpers";
+import { createCredentialsSession } from "@/lib/credentials-session";
 
 export type LoginState =
   | {
@@ -24,22 +25,20 @@ export async function loginAction(
     return { errors: parsed.error.flatten().fieldErrors };
   }
 
+  let user;
   try {
-    await signIn("credentials", {
-      email: parsed.data.email,
-      password: parsed.data.password,
-      redirectTo: "/profile",
-    });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      if (error.type === "CredentialsSignin") {
-        return { message: "이메일 또는 비밀번호가 올바르지 않아요." };
-      }
-      return {
-        message:
-          "로그인 중 문제가 발생했어요. DATABASE_URL 연결을 확인해주세요.",
-      };
-    }
-    throw error;
+    user = await verifyCredentials(parsed.data.email, parsed.data.password);
+  } catch {
+    return {
+      message:
+        "로그인 중 문제가 발생했어요. DATABASE_URL 연결을 확인해주세요.",
+    };
   }
+
+  if (!user) {
+    return { message: "이메일 또는 비밀번호가 올바르지 않아요." };
+  }
+
+  await createCredentialsSession(user.id);
+  redirect("/profile");
 }

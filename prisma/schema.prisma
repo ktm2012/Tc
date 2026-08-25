@@ -41,13 +41,61 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  posts    Post[]
-  comments Comment[]
-  assets   Asset[]
+  accounts     Account[]
+  sessions     Session[]
+  posts        Post[]
+  comments     Comment[]
+  assets       Asset[]
+  projects     Project[]
+  blogPosts    BlogPost[]
+  codeSnippets CodeSnippet[]
+  bookmarks    Bookmark[]
+
+  conversationsAsUserA Conversation[]  @relation("ConversationsAsUserA")
+  conversationsAsUserB Conversation[]  @relation("ConversationsAsUserB")
+  directMessages       DirectMessage[]
 
   @@map("users")
+}
+
+// Direct messages are strictly 1:1 (no group chat), so a Conversation is
+// just a pair of users rather than a generic participants join table.
+// userAId is always the lexicographically smaller of the two user ids (see
+// pairKey() in src/lib/actions/messages.ts) so a lookup for "do these two
+// users already have a conversation" doesn't need to check both orderings.
+model Conversation {
+  id          String    @id @default(cuid())
+  userAId     String
+  userBId     String
+  userAReadAt DateTime?
+  userBReadAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  userA User @relation("ConversationsAsUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("ConversationsAsUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  messages DirectMessage[]
+
+  @@unique([userAId, userBId])
+  @@index([userBId])
+  @@map("conversations")
+}
+
+model DirectMessage {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@map("direct_messages")
 }
 
 model Account {
@@ -95,6 +143,7 @@ model VerificationToken {
 enum CategoryType {
   POST
   ASSET
+  PROJECT
 }
 
 model Category {
@@ -103,8 +152,9 @@ model Category {
   slug String       @unique
   type CategoryType
 
-  posts  Post[]
-  assets Asset[]
+  posts    Post[]
+  assets   Asset[]
+  projects Project[]
 
   @@map("categories")
 }
@@ -125,14 +175,17 @@ enum PostStatus {
 }
 
 model Post {
-  id        String     @id @default(cuid())
-  slug      String     @unique
-  title     String
-  body      String
-  status    PostStatus @default(PUBLISHED)
-  viewCount Int        @default(0)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  title       String
+  body        String
+  status      PostStatus @default(PUBLISHED)
+  // Preset illustrated banner shown on cards/detail (no file upload yet —
+  // see BANNER_THEMES in src/components/ui/SceneBanner.tsx for valid values).
+  bannerTheme String?
+  viewCount   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
@@ -140,12 +193,38 @@ model Post {
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
-  tags     PostTag[]
-  comments Comment[]
+  tags        PostTag[]
+  comments    Comment[]
+  attachments PostAttachment[]
 
   @@index([authorId])
   @@index([categoryId])
   @@map("posts")
+}
+
+enum AttachmentKind {
+  IMAGE
+  FILE
+  AUDIO
+}
+
+// One row per attached image/file/audio clip on a post. Uploaded to Supabase
+// Storage (see src/lib/storage.ts) under a randomized key — fileName keeps
+// the original name only for display, url/key never derive from it.
+model PostAttachment {
+  id       String         @id @default(cuid())
+  kind     AttachmentKind
+  key      String
+  url      String
+  fileName String
+  mimeType String
+  size     Int
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("post_attachments")
 }
 
 // Explicit join model (rather than an implicit Prisma m-n) so the join
@@ -163,14 +242,21 @@ model PostTag {
 
 // parentId is unused by the MVP (comments render flat) but is here so
 // threaded replies don't require a migration later.
+//
+// Comments are looked up by postSlug (not just postId) because the
+// community feed still mixes hardcoded sample posts with real DB posts —
+// see src/lib/sample-data.ts. postId stays optional and only gets set for
+// comments on real Post rows, which keeps Post's cascade-delete working;
+// sample-post comments carry postSlug only.
 model Comment {
   id        String   @id @default(cuid())
   body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  postId String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postSlug String
+  postId   String?
+  post     Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
@@ -179,9 +265,31 @@ model Comment {
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
   replies  Comment[] @relation("CommentReplies")
 
+  @@index([postSlug])
   @@index([postId])
   @@index([authorId])
   @@map("comments")
+}
+
+// Bookmarks reference posts by slug (not a Post relation) because the
+// community feed still mixes hardcoded sample posts with real DB posts —
+// see src/lib/sample-data.ts. Denormalized title/category/bannerTheme let
+// the profile page render the list without needing every slug to resolve
+// back to a real Post row.
+model Bookmark {
+  id          String   @id @default(cuid())
+  postSlug    String
+  postTitle   String
+  category    String?
+  bannerTheme String?
+  createdAt   DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postSlug])
+  @@index([userId])
+  @@map("bookmarks")
 }
 
 model Asset {
@@ -194,6 +302,7 @@ model Asset {
   fileSize      Int
   mimeType      String
   downloadCount Int      @default(0)
+  viewCount     Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -203,7 +312,95 @@ model Asset {
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
+  attachments AssetAttachment[]
+
   @@index([authorId])
   @@index([categoryId])
   @@map("assets")
+}
+
+// Optional preview media (screenshot, audio demo) shown on the asset's
+// detail page alongside the main downloadable file. Reuses the same
+// IMAGE/AUDIO kinds as PostAttachment; assets don't take a generic "file"
+// attachment since the primary upload already covers that.
+model AssetAttachment {
+  id       String         @id @default(cuid())
+  kind     AttachmentKind
+  key      String
+  url      String
+  fileName String
+  mimeType String
+  size     Int
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@map("asset_attachments")
+}
+
+enum ProjectStatus {
+  RECRUITING
+  IN_PROGRESS
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String
+  status      ProjectStatus @default(RECRUITING)
+  role        String
+  teamSize    Int
+  bannerTheme String?
+  viewCount   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@map("projects")
+}
+
+// Short-form posts (tip/tutorial/dev-log) — no separate detail page, the
+// body is shown directly as the card's excerpt, matching the site's
+// current blog design.
+model BlogPost {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  tag       String
+  title     String
+  body      String
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@map("blog_posts")
+}
+
+model CodeSnippet {
+  id        String   @id @default(cuid())
+  language  String
+  title     String
+  content   String
+  copies    Int      @default(0)
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  @@index([authorId])
+  @@map("code_snippets")
 }

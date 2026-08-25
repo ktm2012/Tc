@@ -20,8 +20,11 @@ changes without explicit user approval — this is a standing project rule, not 
 - **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Auth**: Auth.js (NextAuth v5), Credentials provider + Prisma adapter, database-backed sessions
-- **File storage**: S3-compatible object storage (Cloudflare R2 or AWS S3) for uploaded assets/avatars —
-  never local/ephemeral disk
+- **File storage**: Supabase Storage (via `@supabase/supabase-js`, server-side only, using the service
+  role key) for uploaded assets/avatars — never local/ephemeral disk. Chosen over Cloudflare R2 because
+  the project already runs its Postgres on Supabase, so this avoids a second vendor/account. Revisit if
+  download bandwidth grows enough that Supabase Storage's egress pricing (unlike R2's free egress)
+  becomes a real cost — the two are both S3-compatible, so migrating later is a low-effort swap.
 - **Styling**: Tailwind CSS
 - **Validation**: Zod, enforced server-side on every mutation
 - **Markdown rendering**: react-markdown + remark-gfm + rehype-sanitize (user content is never rendered

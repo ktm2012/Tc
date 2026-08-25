@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOutAction } from "@/lib/actions/oauth";
 
 const NAV_ITEMS = [
   { href: "/community", label: "커뮤니티" },
   { href: "/assets", label: "에셋" },
-  { href: "/profile", label: "내 프로필" },
   { href: "/projects", label: "프로젝트 참여" },
   { href: "/blog", label: "블로그" },
   { href: "/code", label: "코드 공유" },
@@ -22,11 +20,35 @@ type NavUser = {
 export function NavBar({ user }: { user: NavUser }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastY.current;
+      if (currentY < 80) {
+        setHidden(false);
+      } else if (delta > 8) {
+        setHidden(true);
+      } else if (delta < -8) {
+        setHidden(false);
+      }
+      lastY.current = currentY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <div className="mx-auto max-w-[1920px] px-4 pt-5 sm:px-7">
+    <div
+      className={`fixed inset-x-0 top-0 z-50 mx-auto max-w-[1920px] px-4 pt-5 transition-transform duration-300 ease-out sm:px-7 ${
+        hidden ? "-translate-y-full" : "translate-y-0"
+      }`}
+    >
       <header className="rounded-[20px] border border-border bg-surface shadow-[0_1px_2px_oklch(20%_0_0_/_0.04)]">
-        <div className="flex h-[68px] items-center justify-between px-5 sm:px-7">
+        <div className="flex h-[78px] items-center justify-between px-5 sm:px-7">
           <div className="flex items-center gap-10">
             <Link href="/" className="flex items-center gap-2">
               <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
@@ -55,24 +77,14 @@ export function NavBar({ user }: { user: NavUser }) {
             </nav>
           </div>
 
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-2 lg:ml-10 lg:flex">
             {user ? (
-              <>
-                <Link
-                  href="/profile"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-[13px] font-bold text-white"
-                >
-                  {user.initial}
-                </Link>
-                <form action={signOutAction}>
-                  <button
-                    type="submit"
-                    className="rounded-xl px-4 py-[9px] text-sm font-semibold text-muted hover:bg-surface-2 hover:text-ink"
-                  >
-                    로그아웃
-                  </button>
-                </form>
-              </>
+              <Link
+                href="/profile"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-[13px] font-bold text-white"
+              >
+                {user.initial}
+              </Link>
             ) : (
               <>
                 <Link
@@ -133,14 +145,16 @@ export function NavBar({ user }: { user: NavUser }) {
             })}
             <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
               {user ? (
-                <form action={signOutAction}>
-                  <button
-                    type="submit"
-                    className="w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-ink"
-                  >
-                    로그아웃
-                  </button>
-                </form>
+                <Link
+                  href="/profile"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-ink"
+                >
+                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white">
+                    {user.initial}
+                  </span>
+                  내 프로필
+                </Link>
               ) : (
                 <>
                   <Link

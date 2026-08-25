@@ -1,38 +1,43 @@
 "use client";
 
 import { useActionState } from "react";
-import { createPostAction, type NewPostState } from "./actions";
+import type { BlogPostFormState } from "@/lib/validation/blog";
 
-const CATEGORIES = [
-  { value: "unity", label: "유니티" },
-  { value: "blender", label: "블렌더" },
-  { value: "shaders", label: "셰이더" },
-  { value: "rigging", label: "리깅" },
-  { value: "vfx", label: "이펙트" },
+const TAGS = [
+  { value: "개발기", label: "개발기" },
+  { value: "튜토리얼", label: "튜토리얼" },
+  { value: "팁", label: "팁" },
 ];
 
-export function NewPostForm() {
-  const [state, action, pending] = useActionState<NewPostState, FormData>(
-    createPostAction,
-    undefined,
-  );
+export function BlogPostForm({
+  action,
+}: {
+  action: (
+    prevState: BlogPostFormState,
+    formData: FormData,
+  ) => Promise<BlogPostFormState>;
+}) {
+  const [state, formAction, pending] = useActionState<
+    BlogPostFormState,
+    FormData
+  >(action, undefined);
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-semibold text-ink">카테고리</span>
+        <span className="text-[13px] font-semibold text-ink">분류</span>
         <select
-          name="category"
-          defaultValue="unity"
+          name="tag"
+          defaultValue="개발기"
           className="rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-ink outline-none focus:border-accent"
         >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
+          {TAGS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
-        {state?.errors?.category?.map((err) => (
+        {state?.errors?.tag?.map((err) => (
           <span key={err} className="text-xs text-accent2-ink">
             {err}
           </span>
@@ -44,7 +49,7 @@ export function NewPostForm() {
         <input
           type="text"
           name="title"
-          placeholder="궁금한 걸 구체적으로 적어주세요"
+          placeholder="글 제목을 적어주세요"
           className="rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-ink outline-none focus:border-accent"
         />
         {state?.errors?.title?.map((err) => (
@@ -58,9 +63,9 @@ export function NewPostForm() {
         <span className="text-[13px] font-semibold text-ink">내용</span>
         <textarea
           name="body"
-          rows={8}
-          placeholder="상황을 자세히 적을수록 답이 빨리 와요."
-          className="resize-none rounded-2xl border border-border bg-surface-2 px-4 py-3 text-sm text-ink outline-none focus:border-accent"
+          rows={16}
+          placeholder="팁, 튜토리얼, 개발기를 자유롭게 나눠보세요."
+          className="min-h-[360px] resize-y rounded-2xl border border-border bg-surface-2 px-5 py-4 text-sm leading-relaxed text-ink outline-none focus:border-accent"
         />
         {state?.errors?.body?.map((err) => (
           <span key={err} className="text-xs text-accent2-ink">

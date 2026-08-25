@@ -1,10 +1,10 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
-import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { signIn } from "@/auth";
 import { registerSchema } from "@/lib/validation/auth";
+import { createCredentialsSession } from "@/lib/credentials-session";
 
 export type RegisterState =
   | {
@@ -54,18 +54,10 @@ export async function registerAction(
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: { email, username, displayName, passwordHash },
   });
 
-  try {
-    await signIn("credentials", { email, password, redirectTo: "/profile" });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return {
-        message: "가입은 됐는데 자동 로그인에 실패했어요. 다시 로그인해주세요.",
-      };
-    }
-    throw error;
-  }
+  await createCredentialsSession(user.id);
+  redirect("/profile");
 }

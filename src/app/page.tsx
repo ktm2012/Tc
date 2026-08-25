@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { samplePosts, featuredAssets } from "@/lib/sample-data";
 import { CATEGORY_BG } from "@/lib/category-color";
+import { formatRelativeTime } from "@/lib/format-time";
+import { SceneBanner } from "@/components/ui/SceneBanner";
+import { BookmarkButton } from "@/components/ui/BookmarkButton";
+import { getBookmarkedSlugs } from "@/lib/bookmarks";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 const CHIPS = [
   { label: "유니티", color: "bg-pink" },
@@ -13,25 +19,41 @@ const CHIPS = [
 ];
 
 const AI_QUESTIONS = [
-  "블렌더 UV 씸(seam) 안 보이게 하는 방법?",
-  "유니티 프리팹에서 NullReference 계속 떠요",
-  "URP 라이트맵 베이크하면 셰이더가 까매져요",
-  "무료로 쓸만한 리깅 에셋 추천해주세요",
+  { question: "블렌더 UV 씸(seam) 안 보이게 하는 방법?", slug: "blender-uv-seam" },
+  {
+    question: "유니티 프리팹에서 NullReference 계속 떠요",
+    slug: "unity-nullreference-prefab",
+  },
+  {
+    question: "URP 라이트맵 베이크하면 셰이더가 까매져요",
+    slug: "urp-shader-lighting-bake",
+  },
+  {
+    question: "무료로 쓸만한 리깅 에셋 추천해주세요",
+    slug: "blender-free-rigs",
+  },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth().catch(() => null);
+  const isLoggedIn = Boolean(session?.user);
+  const bookmarkedSlugs = session?.user
+    ? await getBookmarkedSlugs(session.user.id)
+    : new Set<string>();
+
   return (
     <>
-      <section className="mx-auto max-w-[1920px] px-4 py-4 sm:px-7 sm:py-7">
+      <section className="relative -mt-[100px] w-full overflow-hidden">
         <div
-          className="flex flex-col items-start gap-8 rounded-[28px] px-6 py-10 sm:rounded-[32px] sm:px-10 sm:py-14 lg:flex-row lg:items-center lg:justify-between lg:gap-12 lg:px-14 lg:py-16"
+          className="absolute inset-x-0 top-0 bottom-0 rounded-b-[28px] sm:rounded-b-[32px]"
           style={{
             background:
               "linear-gradient(120deg, var(--color-pink) 0%, var(--color-purple) 35%, var(--color-blue) 70%, var(--color-mint) 100%)",
           }}
-        >
-          <div className="max-w-[520px]">
-            <h1 className="text-[30px] font-extrabold leading-[1.3] text-ink sm:text-[38px] sm:leading-[1.28] lg:text-[42px] lg:leading-[1.25]">
+        />
+        <div className="relative mx-auto flex max-w-[1920px] flex-col items-start gap-8 px-6 pt-[150px] pb-10 sm:px-10 sm:pt-[170px] sm:pb-14 lg:flex-row lg:items-center lg:justify-between lg:gap-12 lg:px-14 lg:pb-16 lg:pt-[190px]">
+          <div className="max-w-[640px]">
+            <h1 className="text-[32px] font-extrabold leading-[1.3] text-ink sm:text-[40px] sm:leading-[1.28] lg:text-[46px] lg:leading-[1.25]">
               유니티, 블렌더 하다가 막혔다면
               <br />
               여기서 물어보세요.
@@ -41,18 +63,42 @@ export default function Home() {
               커뮤니티예요.
             </p>
             <div className="mt-7 flex gap-3">
-              <Link
-                href="/register"
-                className="rounded-[14px] bg-ink px-[26px] py-[14px] text-[15px] font-bold text-white"
-              >
-                회원가입
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-[14px] border border-black/15 bg-surface px-[26px] py-[14px] text-[15px] font-bold text-ink"
-              >
-                로그인
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  href="/community"
+                  className="flex items-center gap-2 rounded-[14px] bg-ink px-[30px] py-4 text-base font-bold text-white"
+                >
+                  커뮤니티 참여하기
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/register"
+                    className="rounded-[14px] bg-ink px-[26px] py-[14px] text-[15px] font-bold text-white"
+                  >
+                    회원가입
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="rounded-[14px] border border-black/15 bg-surface px-[26px] py-[14px] text-[15px] font-bold text-ink"
+                  >
+                    로그인
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -77,12 +123,13 @@ export default function Home() {
             </div>
             <div className="flex flex-col gap-[10px]">
               {AI_QUESTIONS.map((q) => (
-                <div
-                  key={q}
-                  className="rounded-[14px] bg-surface-2 px-[14px] py-3 text-[13px] leading-tight text-ink"
+                <Link
+                  key={q.slug}
+                  href={`/community/${q.slug}`}
+                  className="rounded-[14px] bg-surface-2 px-[14px] py-3 text-[13px] leading-tight text-ink hover:bg-surface transition"
                 >
-                  {q}
-                </div>
+                  {q.question}
+                </Link>
               ))}
             </div>
           </div>
@@ -125,12 +172,13 @@ export default function Home() {
       <section className="mx-auto max-w-[1920px] px-7 pb-8">
         <div className="flex flex-wrap gap-[10px]">
           {CHIPS.map((c) => (
-            <div
+            <Link
               key={c.label}
-              className={`rounded-full px-4 py-2 text-[13px] font-semibold text-ink ${c.color}`}
+              href={`/community?tag=${encodeURIComponent(c.label)}`}
+              className={`rounded-full px-4 py-2 text-[13px] font-semibold text-ink transition hover:opacity-80 ${c.color}`}
             >
               {c.label}
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -141,51 +189,68 @@ export default function Home() {
             커뮤니티 최신 글
           </h2>
           <div className="flex flex-col gap-[14px]">
-            {samplePosts.map((post) => (
-              <Link
-                key={post.slug}
-                href={`/community/${post.slug}`}
-                className="block rounded-[20px] border border-border bg-surface p-[22px] hover:border-accent"
-              >
-                <div
-                  className={`mb-[10px] inline-block rounded-full px-3 py-1 text-xs font-bold text-ink ${CATEGORY_BG[post.categoryColor]}`}
+            {samplePosts.slice(0, 4).map((post) => (
+              <div key={post.slug} className="relative">
+                <Link
+                  href={`/community/${post.slug}`}
+                  className="block overflow-hidden rounded-[20px] border border-border bg-surface hover:border-accent"
                 >
-                  {post.category}
-                </div>
-                <h3 className="mb-2 text-[17px] font-bold text-ink">
-                  {post.title}
-                </h3>
-                <p className="mb-[14px] text-sm leading-relaxed text-muted">
-                  {post.excerpt}
-                </p>
-                <div className="flex items-center gap-[10px]">
-                  <div
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold text-white ${post.author.color}`}
-                  >
-                    {post.author.initial}
-                  </div>
-                  <span className="text-xs font-semibold text-muted">
-                    {post.author.name}
-                  </span>
-                  <span className="text-xs text-muted">· {post.time}</span>
-                  <span className="flex-1" />
-                  <span className="flex items-center gap-[5px] text-xs text-muted">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                  <SceneBanner theme={post.bannerTheme} className="h-[110px]" />
+                  <div className="p-[22px]">
+                    <div
+                      className={`mb-[10px] inline-block rounded-full px-3 py-1 text-xs font-bold text-ink ${CATEGORY_BG[post.categoryColor]}`}
                     >
-                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                    </svg>
-                    {post.comments}
-                  </span>
-                </div>
-              </Link>
+                      {post.category}
+                    </div>
+                    <h3 className="mb-2 text-[17px] font-bold text-ink">
+                      {post.title}
+                    </h3>
+                    <p className="mb-[14px] text-sm leading-relaxed text-muted">
+                      {post.excerpt}
+                    </p>
+                    <div className="flex items-center gap-[10px]">
+                      <div
+                        className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold text-white ${post.author.color}`}
+                      >
+                        {post.author.initial}
+                      </div>
+                      <span className="text-xs font-semibold text-muted">
+                        {post.author.name}
+                      </span>
+                      <span className="text-xs text-muted">
+                        · {formatRelativeTime(post.createdAt)}
+                      </span>
+                      <span className="flex-1" />
+                      <span className="flex items-center gap-[5px] text-xs text-muted">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                        </svg>
+                        {post.comments}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+                <BookmarkButton
+                  post={{
+                    slug: post.slug,
+                    title: post.title,
+                    category: post.category,
+                    bannerTheme: post.bannerTheme,
+                  }}
+                  initialBookmarked={bookmarkedSlugs.has(post.slug)}
+                  isLoggedIn={isLoggedIn}
+                  className="absolute right-3 top-3 z-10"
+                />
+              </div>
             ))}
 
             <div className="flex justify-center pt-1.5">
@@ -219,8 +284,9 @@ export default function Home() {
                 key={asset.title}
                 className="flex gap-[14px] rounded-[18px] border border-border bg-surface p-[14px]"
               >
-                <div
-                  className={`h-[58px] w-[58px] flex-shrink-0 rounded-[14px] ${asset.color}`}
+                <SceneBanner
+                  theme={asset.bannerTheme}
+                  className="h-[58px] w-[58px] flex-shrink-0 rounded-[14px]"
                 />
                 <div className="min-w-0 flex-1">
                   <h4 className="mb-1 text-sm font-bold text-ink">
@@ -277,6 +343,8 @@ export default function Home() {
                 에셋 업로드
               </Link>
             </div>
+
+            <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME} className="mt-3" />
           </div>
         </div>
       </section>
