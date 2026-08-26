@@ -8,17 +8,15 @@ import { formatCount } from "@/lib/format-count";
 import { CATEGORY_COLOR, STATUS_LABEL } from "@/lib/project-display";
 import { SceneBanner, type BannerTheme } from "@/components/ui/SceneBanner";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { ViewTracker } from "@/components/ViewTracker";
 
 async function loadDbProject(slug: string) {
   try {
-    // Update-with-increment so each detail view atomically bumps viewCount
-    // in the same round trip as the fetch; a missing slug throws (Prisma
-    // P2025) and is caught below, same as the old findUnique's null case.
-    const row = await prisma.project.update({
+    const row = await prisma.project.findUnique({
       where: { slug },
-      data: { viewCount: { increment: 1 } },
       include: { author: true, category: true },
     });
+    if (!row) return null;
     return {
       title: row.title,
       description: row.description,
@@ -85,6 +83,7 @@ export default async function ProjectDetailPage({
 
   return (
     <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-12 px-7 pt-10 pb-16 lg:grid-cols-[1fr_280px]">
+      {sample ? null : <ViewTracker kind="project" slug={slug} />}
       <div>
         <SceneBanner
           theme={project.bannerTheme}

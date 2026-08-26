@@ -7,18 +7,16 @@ import { formatRelativeTime } from "@/lib/format-time";
 import { formatCount } from "@/lib/format-count";
 import { auth } from "@/auth";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { ViewTracker } from "@/components/ViewTracker";
 import { DeleteBlogPostButton } from "./DeleteBlogPostButton";
 
 async function loadDbBlogPost(slug: string) {
   try {
-    // Update-with-increment so each detail view atomically bumps viewCount
-    // in the same round trip as the fetch; a missing slug throws (Prisma
-    // P2025) and is caught below, same as the old findUnique's null case.
-    const row = await prisma.blogPost.update({
+    const row = await prisma.blogPost.findUnique({
       where: { slug },
-      data: { viewCount: { increment: 1 } },
       include: { author: true },
     });
+    if (!row) return null;
     return {
       id: row.id as string | null,
       authorId: row.authorId as string | null,
@@ -89,6 +87,7 @@ export default async function BlogPostDetailPage({
 
   return (
     <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-12 px-7 pt-10 pb-16 lg:grid-cols-[1fr_280px]">
+      {samplePost ? null : <ViewTracker kind="blogPost" slug={slug} />}
       <div>
         <div className="mb-4 flex items-center justify-between gap-2">
           <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-bold text-ink">

@@ -13,18 +13,16 @@ import { formatCount } from "@/lib/format-count";
 import { SceneBanner } from "@/components/ui/SceneBanner";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { auth } from "@/auth";
+import { ViewTracker } from "@/components/ViewTracker";
 import { DeleteAssetButton } from "./DeleteAssetButton";
 
 async function loadDbAsset(slug: string) {
   try {
-    // Update-with-increment so each detail view atomically bumps viewCount
-    // in the same round trip as the fetch; a missing slug throws (Prisma
-    // P2025) and is caught below, same as the old findUnique's null case.
-    const row = await prisma.asset.update({
+    const row = await prisma.asset.findUnique({
       where: { slug },
-      data: { viewCount: { increment: 1 } },
       include: { author: true, category: true, attachments: true },
     });
+    if (!row) return null;
     return {
       id: row.id as string | null,
       authorId: row.authorId as string | null,
@@ -110,6 +108,7 @@ export default async function AssetDetailPage({
 
   return (
     <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-12 px-7 pt-10 pb-16 lg:grid-cols-[1fr_280px]">
+      {sampleAsset ? null : <ViewTracker kind="asset" slug={slug} />}
       <div>
         <SceneBanner
           theme={asset.bannerTheme}

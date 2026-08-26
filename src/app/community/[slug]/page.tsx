@@ -11,6 +11,7 @@ import { AdSlot } from "@/components/ads/AdSlot";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getBookmarkedSlugs } from "@/lib/bookmarks";
+import { ViewTracker } from "@/components/ViewTracker";
 import { CommentForm } from "./CommentForm";
 import { DeletePostButton } from "./DeletePostButton";
 import { CommentItem } from "./CommentItem";
@@ -53,15 +54,11 @@ export async function generateMetadata({
 
 async function loadDbPost(slug: string) {
   try {
-    // Update-with-increment (rather than a plain findUnique) so each detail
-    // view atomically bumps viewCount in the same round trip — and, as a
-    // side benefit, a missing slug throws (Prisma P2025) and is caught
-    // below just like the old findUnique's "row is null" case.
-    const row = await prisma.post.update({
+    const row = await prisma.post.findUnique({
       where: { slug },
-      data: { viewCount: { increment: 1 } },
       include: { author: true, category: true, attachments: true },
     });
+    if (!row) return null;
 
     return {
       id: row.id,
@@ -195,6 +192,7 @@ export default async function PostDetailPage({
 
   return (
     <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-12 px-7 pt-10 pb-16 lg:grid-cols-[1fr_280px]">
+      {samplePost ? null : <ViewTracker kind="post" slug={slug} />}
       <div>
         <SceneBanner
           theme={post.bannerTheme}
