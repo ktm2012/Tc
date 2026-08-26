@@ -26,6 +26,11 @@ async function uniqueUsernameFrom(seed: string) {
 const baseAdapter = PrismaAdapter(prisma);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Without this, Auth.js's automatic host-trust detection can be flaky
+  // behind Vercel's proxy layer and silently fall back to the signIn page
+  // after an otherwise-successful OAuth callback (session cookie set, but
+  // redirected to /login instead of the requested callbackUrl).
+  trustHost: true,
   // The Prisma adapter's default createUser only sends name/email/image/
   // emailVerified — our User model also requires username (unique) and
   // displayName, which OAuth profiles don't provide, so we fill them in.
