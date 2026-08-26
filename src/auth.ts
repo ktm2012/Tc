@@ -100,13 +100,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // TEMP diagnostic logging — remove once the OAuth redirect issue is found.
-      console.error("[auth][redirect]", JSON.stringify({ url, baseUrl }));
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
     async session({ session, user }) {
       const dbUser = user as { id: string; username?: string } | undefined;
       if (session.user && dbUser) {

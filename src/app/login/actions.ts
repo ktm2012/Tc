@@ -28,9 +28,7 @@ export async function loginAction(
   let user;
   try {
     user = await verifyCredentials(parsed.data.email, parsed.data.password);
-  } catch (err) {
-    // TEMP diagnostic logging — remove once the DB connection issue is found.
-    console.error("[login] verifyCredentials failed:", err);
+  } catch {
     return {
       message:
         "로그인 중 문제가 발생했어요. DATABASE_URL 연결을 확인해주세요.",
