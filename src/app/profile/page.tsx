@@ -134,8 +134,9 @@ export default async function ProfilePage() {
       licenseColor: LICENSE_COLOR[a.license] ?? "bg-surface-2",
       bannerTheme: bannerThemeForAssetCategory(a.category?.slug),
     }));
-  } catch {
+  } catch (err) {
     // DB unreachable — show session-derived basics only.
+    console.error("profile data load failed:", err);
   }
 
   const initial = displayName.slice(0, 1);
