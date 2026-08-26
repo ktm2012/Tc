@@ -50,8 +50,6 @@ export async function createAssetAction(
   try {
     uploaded = await uploadAssetFile(file);
   } catch (err) {
-    // TEMP diagnostic logging — remove once the upload failure is found.
-    console.error("[assets/new] uploadAssetFile failed:", err);
     const msg =
       err instanceof AttachmentValidationError
         ? err.message
