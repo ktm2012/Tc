@@ -57,12 +57,12 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 128,
     sampleComments: [
       {
-        author: { name: "kdev_unity", initial: "케", color: "bg-accent" },
+        author: { name: "uvjanitor", initial: "U", color: "bg-accent" },
         body: "마진 좀 넉넉하게 주고 언랩해보세요, 저도 그걸로 많이 해결했어요.",
         createdAt: hoursAgo(1.5),
       },
       {
-        author: { name: "shadyshaders", initial: "셰", color: "bg-peach" },
+        author: { name: "riggybit", initial: "리", color: "bg-accent2" },
         body: "씸을 눈에 안 띄는 곳(겨드랑이 안쪽 등)으로 옮기는 것도 방법이에요.",
         createdAt: hoursAgo(1),
       },
@@ -86,17 +86,17 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 341,
     sampleComments: [
       {
-        author: { name: "mira_renders", initial: "미", color: "bg-accent2" },
+        author: { name: "nodewrangler", initial: "노", color: "bg-peach" },
         body: "혹시 Resources.Load로 불러오시나요? 빌드에서는 경로 대소문자 이슈로 자주 터지더라고요.",
         createdAt: hoursAgo(4),
       },
       {
-        author: { name: "shadyshaders", initial: "셰", color: "bg-peach" },
+        author: { name: "hexlumen", initial: "헥", color: "bg-accent" },
         body: "ScriptableObject가 에디터에서만 참조가 남아있고 빌드엔 안 포함된 거 아닐까요?",
         createdAt: hoursAgo(3),
       },
       {
-        author: { name: "jvfx", initial: "제", color: "bg-muted" },
+        author: { name: "soundscape_yu", initial: "사", color: "bg-muted" },
         body: "AssetBundle/Addressables 쪽 경로면 빌드 후 스트리밍 에셋 폴더에 실제로 들어갔는지도 확인해보세요.",
         createdAt: hoursAgo(2),
       },
@@ -134,22 +134,22 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 512,
     sampleComments: [
       {
-        author: { name: "kdev_unity", initial: "케", color: "bg-accent" },
+        author: { name: "clipnotes", initial: "클", color: "bg-accent2" },
         body: "Meta Pass 설정 확인해보셨어요? 베이크할 때 그것 때문에 새까맣게 나온 적 있어요.",
         createdAt: hoursAgo(20),
       },
       {
-        author: { name: "animate_this", initial: "애", color: "bg-accent2" },
+        author: { name: "uvjanitor", initial: "U", color: "bg-accent" },
         body: "저도 똑같은 문제 겪었는데 결국 Lightmapping 전용 pass를 따로 만들어서 해결했어요.",
         createdAt: hoursAgo(10),
       },
       {
-        author: { name: "jvfx", initial: "제", color: "bg-muted" },
+        author: { name: "riggybit", initial: "리", color: "bg-accent2" },
         body: "Shader Graph 프리뷰 창에서는 Baked GI 값이 항상 0으로 나와서 헷갈리기 쉬워요. 실제 빌드에서 한번 찍어보세요.",
         createdAt: hoursAgo(6),
       },
       {
-        author: { name: "mira_renders", initial: "미", color: "bg-accent2" },
+        author: { name: "hexlumen", initial: "헥", color: "bg-accent" },
         body: "혹시 라이트맵 UV 채널(UV2)을 별도로 안 만들어두신 건 아니죠? 그것 때문에도 새까맣게 나온 적 있어요.",
         createdAt: hoursAgo(2),
       },
@@ -172,7 +172,7 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 89,
     sampleComments: [
       {
-        author: { name: "mira_renders", initial: "미", color: "bg-accent2" },
+        author: { name: "riggybit", initial: "리", color: "bg-accent2" },
         body: "블렌더 스튜디오에서 무료로 풀은 Sprite Fright 리그 추천드려요!",
         createdAt: hoursAgo(6),
       },
@@ -196,12 +196,12 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 156,
     sampleComments: [
       {
-        author: { name: "shadyshaders", initial: "셰", color: "bg-peach" },
+        author: { name: "nodewrangler", initial: "노", color: "bg-peach" },
         body: "Distribute Points 대신 Instance on Points + Raycast로 모서리 걸러내는 방법도 있어요.",
         createdAt: hoursAgo(2),
       },
       {
-        author: { name: "kdev_unity", initial: "케", color: "bg-accent" },
+        author: { name: "clipnotes", initial: "클", color: "bg-accent2" },
         body: "창문 사이 최소 거리 조건을 노드에 추가하면 겹침이 줄어들 거예요.",
         createdAt: hoursAgo(1),
       },
@@ -225,17 +225,17 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 274,
     sampleComments: [
       {
-        author: { name: "animate_this", initial: "애", color: "bg-accent2" },
+        author: { name: "soundscape_yu", initial: "사", color: "bg-muted" },
         body: "핸들을 Dictionary로 관리하면서 씬 전환마다 정확히 짝 맞춰서 Release 해주시나요?",
         createdAt: hoursAgo(6),
       },
       {
-        author: { name: "jvfx", initial: "제", color: "bg-muted" },
+        author: { name: "hexlumen", initial: "헥", color: "bg-accent" },
         body: "Addressables 프로파일러 창 켜서 어떤 에셋이 안 풀리는지 직접 확인해보세요.",
         createdAt: hoursAgo(2),
       },
       {
-        author: { name: "shadyshaders", initial: "셰", color: "bg-peach" },
+        author: { name: "uvjanitor", initial: "U", color: "bg-accent" },
         body: "혹시 Instantiate까지 Addressables로 하고 계신가요? Instantiate/ReleaseInstance 짝을 안 맞추면 딱 그 증상이 나요.",
         createdAt: hoursAgo(1),
       },
@@ -259,7 +259,7 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 198,
     sampleComments: [
       {
-        author: { name: "kdev_unity", initial: "케", color: "bg-accent" },
+        author: { name: "clipnotes", initial: "클", color: "bg-accent2" },
         body: "서브 이미터가 파티클마다 새로 스폰되는 구조면 진짜 무거워요, 확률 기반으로 줄여보세요.",
         createdAt: daysAgo(1.5),
       },
@@ -283,17 +283,17 @@ const RAW_POSTS: Omit<SamplePost, "comments">[] = [
     viewCount: 233,
     sampleComments: [
       {
-        author: { name: "shadyshaders", initial: "셰", color: "bg-peach" },
+        author: { name: "nodewrangler", initial: "노", color: "bg-peach" },
         body: "저희 팀은 씬을 캐릭터/배경으로 나눠서 링크로 관리해요, 병합 충돌이 훨씬 줄어요.",
         createdAt: daysAgo(3),
       },
       {
-        author: { name: "jvfx", initial: "제", color: "bg-muted" },
+        author: { name: "soundscape_yu", initial: "사", color: "bg-muted" },
         body: "Git LFS 쓰고 있는데 용량 문제만 빼면 나쁘지 않아요.",
         createdAt: daysAgo(1),
       },
       {
-        author: { name: "kdev_unity", initial: "케", color: "bg-accent" },
+        author: { name: "riggybit", initial: "리", color: "bg-accent2" },
         body: "인원이 적으면 그냥 작업 순서를 정해서 순차적으로 파일 넘기는 것도 의외로 편해요.",
         createdAt: hoursAgo(20),
       },
