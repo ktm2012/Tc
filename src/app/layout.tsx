@@ -6,6 +6,7 @@ import { NavBar } from "@/components/layout/NavBar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatProvider } from "@/components/chat/ChatContext";
 import { ChatWidget, type ChatCurrentUser } from "@/components/chat/ChatWidget";
+import { ADSENSE_CLIENT_ID } from "@/lib/adsense";
 import "./globals.css";
 
 const notoSansKr = Noto_Sans_KR({
@@ -62,7 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     navUser = null;
   }
 
-  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const adsenseClientId = ADSENSE_CLIENT_ID;
 
   return (
     <html

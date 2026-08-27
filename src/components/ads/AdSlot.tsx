@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ADSENSE_CLIENT_ID } from "@/lib/adsense";
 
 declare global {
   interface Window {
@@ -8,11 +9,11 @@ declare global {
   }
 }
 
-// Renders nothing (not a placeholder box) until both the AdSense client ID
-// and the given slot ID are configured — see .env.example — so the layout
-// looks exactly the same as it does today until real ad units exist.
+// Renders nothing (not a placeholder box) until a slot ID is configured, so
+// the layout looks unchanged until real ad units exist. Auto ads still run
+// from the loader script in layout.tsx regardless of these slots.
 export function AdSlot({ slot, className }: { slot: string | undefined; className?: string }) {
-  const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const client = ADSENSE_CLIENT_ID;
   const pushed = useRef(false);
 
   useEffect(() => {
