@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { codeSnippets } from "@/lib/sample-data";
 import { formatCount } from "@/lib/format-count";
 import { SortToggle, type SortOrder } from "@/components/ui/SortToggle";
@@ -27,6 +27,11 @@ const LANGUAGES = [
 
 const snippetKey = (snippet: CodeSnippet) => snippet.id ?? snippet.title;
 
+// A card click is the "view" trigger (there's no detail page), so without
+// this guard every stray click on the same card re-counts a view. Track
+// which snippets this browser tab has already counted so each one only
+// bumps the count once per page load, mirroring how the other sections
+// dedupe views with a cookie.
 export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
   const [language, setLanguage] = useState("전체");
   const [sort, setSort] = useState<SortOrder>("latest");
@@ -36,6 +41,8 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
   const [viewCounts, setViewCounts] = useState<Record<string, number>>(() =>
     Object.fromEntries(snippets.map((s) => [snippetKey(s), s.viewCount])),
   );
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const viewedRef = useRef<Set<string>>(new Set());
 
   const filteredSnippets = useMemo(() => {
     const filtered =
@@ -50,17 +57,51 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
     );
   }, [snippets, language, sort, viewCounts]);
 
+  async function copyToClipboard(text: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // Clipboard API can reject (permissions, insecure context, focus) —
+      // fall through to the legacy path rather than throwing.
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
   async function handleCopy(snippet: CodeSnippet) {
-    await navigator.clipboard.writeText(snippet.content);
+    const copied = await copyToClipboard(snippet.content);
+    if (!copied) {
+      setCopyFeedback("복사에 실패했어요. 직접 선택해 복사해주세요.");
+      window.setTimeout(() => setCopyFeedback(null), 3000);
+      return;
+    }
+    setCopyFeedback("복사했어요!");
+    window.setTimeout(() => setCopyFeedback(null), 2000);
     const key = snippetKey(snippet);
     setCopyCounts((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
     if (snippet.id) {
-      await incrementCodeSnippetCopiesAction(snippet.id);
+      void incrementCodeSnippetCopiesAction(snippet.id);
     }
   }
 
   function handleView(snippet: CodeSnippet) {
     const key = snippetKey(snippet);
+    if (viewedRef.current.has(key)) return;
+    viewedRef.current.add(key);
     setViewCounts((prev) => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
     if (snippet.id) {
       void incrementCodeSnippetViewAction(snippet.id);
@@ -102,6 +143,15 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
         <SortToggle value={sort} onChange={setSort} />
       </div>
 
+      {copyFeedback ? (
+        <p
+          role="status"
+          className="mb-3 text-xs font-semibold text-accent-ink"
+        >
+          {copyFeedback}
+        </p>
+      ) : null}
+
       <div className="flex flex-col gap-4">
         {filteredSnippets.length === 0 ? (
           <p className="rounded-2xl border border-border bg-surface px-6 py-16 text-center text-sm text-muted">
@@ -110,7 +160,7 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
         ) : (
           filteredSnippets.map((snippet) => (
             <div
-              key={snippet.title}
+              key={snippetKey(snippet)}
               onClick={() => handleView(snippet)}
               className="cursor-pointer overflow-hidden rounded-[20px] border border-border bg-surface"
             >

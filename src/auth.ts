@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -7,9 +8,9 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { verifyCredentials } from "@/lib/auth-helpers";
 
-async function uniqueUsernameFrom(seed: string) {
+async function uniqueUsernameFrom(seed: string | null | undefined) {
   const base =
-    seed
+    (seed ?? "")
       .split("@")[0]
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, "") || "user";
@@ -37,8 +38,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: {
     ...baseAdapter,
     async createUser(data) {
-      const email = data.email;
-      const username = await uniqueUsernameFrom(email);
+      // Kakao (and Naver, for some accounts) can complete an OAuth sign-in
+      // without returning an email — the user just never granted the email
+      // consent item. Our User.email column is NOT NULL + @unique, so a
+      // missing email here used to throw and block first-time sign-in for
+      // those accounts entirely. Fall back to a stable synthetic address so
+      // the account can still be created; the real one can be added later.
+      const email =
+        data.email ?? `no-email-${randomUUID()}@users.noreply.tooling.it.kr`;
+      const username = await uniqueUsernameFrom(data.email);
       const user = await prisma.user.create({
         data: {
           email,
