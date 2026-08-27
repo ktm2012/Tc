@@ -271,17 +271,30 @@ export default async function AssetDetailPage({
         <h3 className="mb-[14px] text-[13px] font-bold text-muted">
           제작자 정보
         </h3>
-        <Link
-          href={`/profile/${asset.author}`}
-          className="flex items-center gap-2.5 hover:opacity-80"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent2 text-[13px] font-bold text-white">
-            {asset.author.slice(0, 1)}
-          </div>
-          <div>
-            <div className="text-sm font-bold">{asset.author}</div>
-          </div>
-        </Link>
+        {(() => {
+          const authorCard = (
+            <>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent2 text-[13px] font-bold text-white">
+                {asset.author.slice(0, 1)}
+              </div>
+              <div>
+                <div className="text-sm font-bold">{asset.author}</div>
+              </div>
+            </>
+          );
+          // Sample (seed) assets have a fictional author with no real
+          // /profile/[username] row, so only link real DB authors.
+          return sampleAsset ? (
+            <div className="flex items-center gap-2.5">{authorCard}</div>
+          ) : (
+            <Link
+              href={`/profile/${asset.author}`}
+              className="flex items-center gap-2.5 hover:opacity-80"
+            >
+              {authorCard}
+            </Link>
+          );
+        })()}
 
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR} className="mt-8" />
       </aside>

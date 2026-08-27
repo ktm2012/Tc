@@ -439,19 +439,33 @@ export default async function PostDetailPage({
         <h3 className="mb-[14px] text-[13px] font-bold text-muted">
           작성자 정보
         </h3>
-        <Link
-          href={`/profile/${post.author.name}`}
-          className="flex items-center gap-2.5 hover:opacity-80"
-        >
-          <div
-            className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white ${post.author.colorClass}`}
-          >
-            {post.author.initial}
-          </div>
-          <div>
-            <div className="text-sm font-bold">{post.author.name}</div>
-          </div>
-        </Link>
+        {(() => {
+          const authorCard = (
+            <>
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white ${post.author.colorClass}`}
+              >
+                {post.author.initial}
+              </div>
+              <div>
+                <div className="text-sm font-bold">{post.author.name}</div>
+              </div>
+            </>
+          );
+          // Sample (seed) posts have a fictional author with no real
+          // /profile/[username] row, so linking there would 404 — render the
+          // byline as plain text for those and only link real DB authors.
+          return samplePost ? (
+            <div className="flex items-center gap-2.5">{authorCard}</div>
+          ) : (
+            <Link
+              href={`/profile/${post.author.name}`}
+              className="flex items-center gap-2.5 hover:opacity-80"
+            >
+              {authorCard}
+            </Link>
+          );
+        })()}
 
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR} className="mt-8" />
       </aside>

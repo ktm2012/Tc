@@ -194,19 +194,32 @@ export default async function ProjectDetailPage({
         <h3 className="mb-[14px] text-[13px] font-bold text-muted">
           작성자 정보
         </h3>
-        <Link
-          href={`/profile/${project.author.name}`}
-          className="flex items-center gap-2.5 hover:opacity-80"
-        >
-          <div
-            className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white ${project.author.color}`}
-          >
-            {project.author.initial}
-          </div>
-          <div>
-            <div className="text-sm font-bold">{project.author.name}</div>
-          </div>
-        </Link>
+        {(() => {
+          const authorCard = (
+            <>
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold text-white ${project.author.color}`}
+              >
+                {project.author.initial}
+              </div>
+              <div>
+                <div className="text-sm font-bold">{project.author.name}</div>
+              </div>
+            </>
+          );
+          // Sample (seed) projects have a fictional author with no real
+          // /profile/[username] row, so only link real DB authors.
+          return sample ? (
+            <div className="flex items-center gap-2.5">{authorCard}</div>
+          ) : (
+            <Link
+              href={`/profile/${project.author.name}`}
+              className="flex items-center gap-2.5 hover:opacity-80"
+            >
+              {authorCard}
+            </Link>
+          );
+        })()}
 
         <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR} className="mt-8" />
       </aside>
