@@ -139,6 +139,29 @@ export function ChatWidget({ currentUser }: { currentUser: ChatCurrentUser }) {
     };
   }, [currentUser, refreshConversations]);
 
+  // Fallback when Supabase Realtime isn't configured (no
+  // NEXT_PUBLIC_SUPABASE_ANON_KEY): without this the conversation list and
+  // the open thread only ever refresh on mount / on send, so an incoming
+  // message is invisible until a full page reload. Poll instead — slowly
+  // for the list, a bit faster for the thread that's actually open, and
+  // not at all while the tab is hidden.
+  useEffect(() => {
+    if (!currentUser) return;
+    if (getRealtimeClient()) return; // realtime handles it
+
+    const tick = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      void refreshConversations();
+      const openId = selectedIdRef.current;
+      if (openId) {
+        fetchMessagesAction(openId).then(setMessages).catch(() => {});
+      }
+    };
+
+    const interval = setInterval(tick, 7000);
+    return () => clearInterval(interval);
+  }, [currentUser, refreshConversations]);
+
   function handleQueryChange(value: string) {
     setQuery(value);
     if (searchTimer.current) clearTimeout(searchTimer.current);
