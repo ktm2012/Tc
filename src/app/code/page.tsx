@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { codeSnippets } from "@/lib/sample-data";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { CodeBrowser } from "./CodeBrowser";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ async function loadDbSnippets() {
     });
     return rows.map((row) => ({
       id: row.id,
+      authorId: row.authorId,
       language: row.language,
       languageColor: LANGUAGE_COLOR[row.language] ?? "bg-surface-2",
       title: row.title,
@@ -44,7 +46,10 @@ async function loadDbSnippets() {
 }
 
 export default async function CodeSharePage() {
-  const dbSnippets = await loadDbSnippets();
+  const [dbSnippets, session] = await Promise.all([
+    loadDbSnippets(),
+    auth().catch(() => null),
+  ]);
   const snippets = [...dbSnippets, ...codeSnippets];
 
   return (
@@ -76,7 +81,7 @@ export default async function CodeSharePage() {
         </Link>
       </div>
 
-      <CodeBrowser snippets={snippets} />
+      <CodeBrowser snippets={snippets} currentUserId={session?.user?.id ?? null} />
     </section>
   );
 }

@@ -6,9 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format-time";
 import { formatCount } from "@/lib/format-count";
 import { CATEGORY_COLOR, STATUS_LABEL } from "@/lib/project-display";
+import { auth } from "@/auth";
 import { SceneBanner, type BannerTheme } from "@/components/ui/SceneBanner";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { ViewTracker } from "@/components/ViewTracker";
+import { DeleteProjectButton } from "./DeleteProjectButton";
 
 async function loadDbProject(slug: string) {
   try {
@@ -18,6 +20,8 @@ async function loadDbProject(slug: string) {
     });
     if (!row) return null;
     return {
+      id: row.id as string | null,
+      authorId: row.authorId as string | null,
       title: row.title,
       description: row.description,
       status: STATUS_LABEL[row.status],
@@ -70,12 +74,22 @@ export default async function ProjectDetailPage({
   const sample = sampleProjects.find((p) => p.slug === slug);
 
   const project = sample
-    ? { ...sample, createdAt: null as Date | null }
+    ? {
+        ...sample,
+        id: null as string | null,
+        authorId: null as string | null,
+        createdAt: null as Date | null,
+      }
     : await loadDbProject(slug);
 
   if (!project) {
     notFound();
   }
+
+  const session = await auth().catch(() => null);
+  const isOwner = Boolean(
+    session?.user?.id && project.authorId && project.authorId === session.user.id,
+  );
 
   const related = sampleProjects
     .filter((p) => p.slug !== slug && p.category === project.category)
@@ -91,19 +105,24 @@ export default async function ProjectDetailPage({
           className="mb-6 h-[240px] rounded-[24px]"
         />
 
-        <div className="mb-4 flex items-center gap-2">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-bold text-white ${
-              project.status === "모집중" ? "bg-green" : "bg-surface-2 text-ink"
-            }`}
-          >
-            {project.status}
-          </span>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-bold text-ink ${project.categoryColor}`}
-          >
-            {project.category}
-          </span>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold text-white ${
+                project.status === "모집중" ? "bg-green" : "bg-surface-2 text-ink"
+              }`}
+            >
+              {project.status}
+            </span>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold text-ink ${project.categoryColor}`}
+            >
+              {project.category}
+            </span>
+          </div>
+          {isOwner && project.id ? (
+            <DeleteProjectButton projectId={project.id} />
+          ) : null}
         </div>
 
         <h1 className="mb-5 text-[28px] font-extrabold leading-[1.3]">

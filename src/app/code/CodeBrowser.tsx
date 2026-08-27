@@ -1,19 +1,23 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import type { codeSnippets } from "@/lib/sample-data";
 import { formatCount } from "@/lib/format-count";
 import { SortToggle, type SortOrder } from "@/components/ui/SortToggle";
 import {
   incrementCodeSnippetCopiesAction,
   incrementCodeSnippetViewAction,
+  deleteCodeSnippetAction,
 } from "./actions";
 
 // DB-backed snippets carry a real `id` (see code/page.tsx), sample snippets
 // from sample-data.ts don't since they have no row to persist a count
 // against — that split decides whether a copy click can update the
 // database or only the in-memory count for this page view.
-type CodeSnippet = (typeof codeSnippets)[number] & { id?: string };
+type CodeSnippet = (typeof codeSnippets)[number] & {
+  id?: string;
+  authorId?: string | null;
+};
 
 // Kept as a fixed list (rather than derived from `snippets`) so a language
 // with no snippets yet — Python, for now — still shows up as a real,
@@ -32,9 +36,19 @@ const snippetKey = (snippet: CodeSnippet) => snippet.id ?? snippet.title;
 // which snippets this browser tab has already counted so each one only
 // bumps the count once per page load, mirroring how the other sections
 // dedupe views with a cookie.
-export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
+export function CodeBrowser({
+  snippets,
+  currentUserId = null,
+}: {
+  snippets: CodeSnippet[];
+  currentUserId?: string | null;
+}) {
   const [language, setLanguage] = useState("전체");
   const [sort, setSort] = useState<SortOrder>("latest");
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletedKeys, setDeletedKeys] = useState<Set<string>>(new Set());
+  const [deletePending, startDelete] = useTransition();
   const [copyCounts, setCopyCounts] = useState<Record<string, number>>(() =>
     Object.fromEntries(snippets.map((s) => [snippetKey(s), s.copies])),
   );
@@ -45,17 +59,35 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
   const viewedRef = useRef<Set<string>>(new Set());
 
   const filteredSnippets = useMemo(() => {
-    const filtered =
-      language === "전체"
-        ? snippets
-        : snippets.filter((s) => s.language === language);
+    const filtered = snippets.filter(
+      (s) =>
+        !deletedKeys.has(snippetKey(s)) &&
+        (language === "전체" || s.language === language),
+    );
     return [...filtered].sort((a, b) =>
       sort === "latest"
         ? b.createdAt.getTime() - a.createdAt.getTime()
         : (viewCounts[snippetKey(b)] ?? b.viewCount) -
           (viewCounts[snippetKey(a)] ?? a.viewCount),
     );
-  }, [snippets, language, sort, viewCounts]);
+  }, [snippets, language, sort, viewCounts, deletedKeys]);
+
+  function handleDelete(snippet: CodeSnippet) {
+    if (!snippet.id) return;
+    const id = snippet.id;
+    const key = snippetKey(snippet);
+    startDelete(async () => {
+      const result = await deleteCodeSnippetAction(id);
+      if (result.ok) {
+        setConfirmingDelete(null);
+        setDeleteError(null);
+        setDeletedKeys((prev) => new Set(prev).add(key));
+      } else {
+        setDeleteError(result.error);
+        setConfirmingDelete(null);
+      }
+    });
+  }
 
   async function copyToClipboard(text: string) {
     try {
@@ -151,6 +183,11 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
           {copyFeedback}
         </p>
       ) : null}
+      {deleteError ? (
+        <p role="status" className="mb-3 text-xs font-semibold text-accent2-ink">
+          {deleteError}
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-4">
         {filteredSnippets.length === 0 ? (
@@ -243,6 +280,48 @@ export function CodeBrowser({ snippets }: { snippets: CodeSnippet[] }) {
                 <span className="text-xs font-semibold text-muted">
                   {snippet.author.name}
                 </span>
+                {currentUserId &&
+                snippet.id &&
+                snippet.authorId === currentUserId ? (
+                  <div
+                    className="ml-auto flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {confirmingDelete === snippetKey(snippet) ? (
+                      <>
+                        <span className="text-xs text-muted">
+                          정말 삭제할까요?
+                        </span>
+                        <button
+                          type="button"
+                          disabled={deletePending}
+                          onClick={() => handleDelete(snippet)}
+                          className="rounded-lg bg-accent2 px-2.5 py-1 text-xs font-bold text-white disabled:opacity-60"
+                        >
+                          {deletePending ? "삭제 중..." : "삭제"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDelete(null)}
+                          className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-ink"
+                        >
+                          취소
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError(null);
+                          setConfirmingDelete(snippetKey(snippet));
+                        }}
+                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted hover:border-accent2 hover:text-accent2-ink"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+                ) : null}
               </div>
             </div>
           ))
