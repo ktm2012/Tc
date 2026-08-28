@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import { Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
 import { auth } from "@/auth";
 import { NavBar } from "@/components/layout/NavBar";
@@ -85,6 +86,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <Footer />
           <ChatWidget currentUser={chatUser} />
         </ChatProvider>
+        <Analytics />
       </body>
     </html>
   );
